@@ -1,0 +1,298 @@
+erDiagram
+
+    %% =====================================================================
+    %% Registro NIS2/ACN - Entity Relationship Diagram (20 tabelle)
+    %% Project Work - Informatica per le Aziende Digitali (L-31), Traccia PW 19
+    %% .
+    %% Zone funzionali:
+    %%   1. Lookup / Dominio    (7 tabelle) - valori controllati referenziati da FK
+    %%   2. Entita principali   (6 tabelle) - core del profilo ACN
+    %%   3. Junction N:M        (5 tabelle) - FK composite (id + id_organizzazione)
+    %%                                       per l'isolamento multi-tenant
+    %%   4. Storico / Audit     (2 tabelle) - append-only, ON DELETE RESTRICT
+    %% .
+    %% Render: https://mermaid.live (incollare il contenuto, esportare PNG/SVG)
+    %% =====================================================================
+
+    %% ---------------------------------------------------------------------
+    %% ZONA 1 — LOOKUP / DOMINIO
+    %% ---------------------------------------------------------------------
+    tipo_asset {
+        serial  id          PK
+        varchar codice      UK "HW SW DATO RETE CLOUD FISICO IOT"
+        varchar descrizione
+    }
+
+    livello_criticita {
+        serial   id        PK
+        varchar  codice    UK "BASSO..CRITICO"
+        varchar  etichetta
+        smallint livello   UK "1..5 - seconda candidate key"
+    }
+
+    settore_nis2 {
+        serial  id          PK
+        varchar codice      UK
+        varchar descrizione
+        varchar allegato    "I II III IV - D.Lgs. 138/2024"
+    }
+
+    tipo_soggetto {
+        serial  id          PK
+        varchar codice      UK "ESSENZIALE IMPORTANTE"
+        varchar descrizione
+    }
+
+    tipo_servizio {
+        serial  id          PK
+        varchar codice      UK
+        varchar descrizione
+    }
+
+    tipo_dipendenza {
+        serial  id          PK
+        varchar codice      UK
+        varchar descrizione
+    }
+
+    ruolo_organizzativo {
+        serial  id          PK
+        varchar codice      UK "CISO DPO REFERENTE_NIS2 ..."
+        varchar descrizione
+    }
+
+    %% ---------------------------------------------------------------------
+    %% ZONA 2 — ENTITA PRINCIPALI
+    %% ---------------------------------------------------------------------
+    organizzazione {
+        serial      id                       PK
+        varchar     codice_fiscale           UK
+        varchar     denominazione
+        int         id_settore_nis2          FK
+        int         id_tipo_soggetto         FK
+        varchar     dimensione               "MICRO PICCOLA MEDIA GRANDE"
+        varchar     comune
+        char        paese
+        int         numero_dipendenti
+        numeric     fatturato_mln_eur
+        date        data_registrazione_acn
+        varchar     numero_registrazione_acn UK "chiave di export ACN"
+        timestamptz data_modifica
+        bool        attiva
+    }
+
+    asset {
+        serial      id                        PK
+        int         id_organizzazione         FK
+        varchar     codice_interno            UK "unico per organizzazione"
+        varchar     nome
+        text        descrizione
+        int         id_tipo_asset             FK
+        int         id_livello_criticita      FK
+        varchar     produttore
+        varchar     modello_versione
+        varchar     ubicazione
+        inet        indirizzo_ip              "tipo nativo PostgreSQL"
+        varchar     hostname
+        varchar     sistema_operativo
+        date        data_acquisizione
+        date        data_fine_vita            "Reg. UE 2024-2690 p.12.3"
+        date        data_ultima_patch         "Reg. UE 2024-2690 p.12.3"
+        varchar     stato_valutazione_rischio "Reg. UE 2024-2690 p.12.3"
+        bool        in_produzione
+        int         versione_record           "incrementato dal trigger"
+        timestamptz data_modifica
+        varchar     modificato_da
+    }
+
+    servizio {
+        serial      id                     PK
+        int         id_organizzazione      FK
+        varchar     codice_interno         UK "unico per organizzazione"
+        varchar     nome
+        int         id_tipo_servizio       FK
+        int         id_livello_criticita   FK
+        int         rto_minuti             "Recovery Time Objective in minuti"
+        int         rpo_minuti             "Recovery Point Objective in minuti"
+        numeric     disponibilita_target
+        bool        dati_personali
+        varchar     classificazione_dati   "PUBBLICO..DATI_PARTICOLARI"
+        text        normative_applicabili
+        bool        attivo
+        int         versione_record
+        timestamptz data_modifica
+    }
+
+    fornitore {
+        serial      id                  PK
+        varchar     codice_interno      UK
+        varchar     ragione_sociale
+        char        paese
+        varchar     email_sicurezza
+        text        certificazioni
+        timestamptz data_modifica
+    }
+
+    dipendenza {
+        serial      id                      PK
+        varchar     codice_interno          UK "unico per organizzazione"
+        int         id_organizzazione       FK
+        int         id_fornitore            FK
+        int         id_tipo_dipendenza      FK
+        varchar     denominazione_servizio
+        int         id_livello_criticita    FK
+        date        data_inizio
+        date        data_scadenza
+        text        paesi_elaborazione_dati "GDPR art.44"
+        varchar     contratto_numero
+        bool        dpa_firmato             "GDPR art.28"
+        numeric     sla_disponibilita
+        bool        attiva
+        timestamptz data_modifica
+    }
+
+    responsabile {
+        serial      id                PK
+        int         id_organizzazione FK
+        varchar     nome
+        varchar     cognome
+        varchar     email             UK "chiave logica nelle junction"
+        varchar     telefono
+        int         id_ruolo          FK
+        date        data_inizio
+        date        data_fine         "NULL uguale in carica"
+        timestamptz data_modifica
+    }
+
+    %% ---------------------------------------------------------------------
+    %% ZONA 3 — JUNCTION N:M con isolamento multi-tenant
+    %% ---------------------------------------------------------------------
+    asset_servizio {
+        int     id_asset        PK "FK composita con id_asset_org"
+        int     id_asset_org    FK
+        int     id_servizio     PK "FK composita con id_servizio_org"
+        int     id_servizio_org FK
+        varchar tipo_relazione  PK "SUPPORTA EROGA DIPENDE_DA OSPITA"
+        text    note
+    }
+
+    asset_dipendenza {
+        int  id_asset          PK
+        int  id_asset_org      FK
+        int  id_dipendenza     PK
+        int  id_dipendenza_org FK
+        text note
+    }
+
+    servizio_dipendenza {
+        int  id_servizio       PK
+        int  id_servizio_org   FK
+        int  id_dipendenza     PK
+        int  id_dipendenza_org FK
+        text note
+    }
+
+    asset_responsabile {
+        serial  id                  PK
+        int     id_asset            FK
+        int     id_asset_org        FK
+        int     id_responsabile     FK
+        int     id_resp_org         FK
+        varchar tipo_responsabilita "PROPRIETARIO CUSTODE AMMINISTRATORE REFERENTE"
+        date    data_inizio
+        date    data_fine           "NULL uguale incarico attivo"
+    }
+
+    servizio_responsabile {
+        serial  id                  PK
+        int     id_servizio         FK
+        int     id_servizio_org     FK
+        int     id_responsabile     FK
+        int     id_resp_org         FK
+        varchar tipo_responsabilita "PROPRIETARIO GESTORE REFERENTE_SICUREZZA APPROVATORE"
+        date    data_inizio
+        date    data_fine
+    }
+
+    %% ---------------------------------------------------------------------
+    %% ZONA 4 — STORICO / AUDIT (append-only, ON DELETE RESTRICT)
+    %% ---------------------------------------------------------------------
+    asset_storico {
+        serial      id                        PK
+        int         id_asset                  FK "ON DELETE RESTRICT"
+        int         versione_record           UK "unico con id_asset"
+        varchar     nome
+        text        descrizione
+        int         id_tipo_asset             FK
+        int         id_livello_criticita      FK
+        varchar     produttore
+        varchar     ubicazione
+        inet        indirizzo_ip
+        varchar     hostname
+        bool        in_produzione
+        date        data_ultima_patch         "snapshot p.12.3"
+        varchar     stato_valutazione_rischio "snapshot p.12.3"
+        timestamptz data_modifica
+        varchar     modificato_da
+        text        motivo_modifica           "da GUC app.motivo_modifica"
+    }
+
+    servizio_storico {
+        serial      id                   PK
+        int         id_servizio          FK "ON DELETE RESTRICT"
+        int         versione_record      UK "unico con id_servizio"
+        varchar     nome
+        int         id_tipo_servizio     FK
+        int         id_livello_criticita FK
+        int         rto_minuti
+        int         rpo_minuti
+        numeric     disponibilita_target
+        bool        dati_personali
+        varchar     classificazione_dati
+        bool        attivo
+        timestamptz data_modifica
+        varchar     modificato_da
+        text        motivo_modifica
+    }
+
+    %% =====================================================================
+    %% RELAZIONI
+    %% =====================================================================
+
+    %% Lookup -> Entita principali
+    settore_nis2        ||--o{ organizzazione : classifica
+    tipo_soggetto       ||--o{ organizzazione : qualifica
+    tipo_asset          ||--o{ asset : tipizza
+    livello_criticita   ||--o{ asset : valuta
+    tipo_servizio       ||--o{ servizio : tipizza
+    livello_criticita   ||--o{ servizio : valuta
+    tipo_dipendenza     ||--o{ dipendenza : tipizza
+    livello_criticita   ||--o{ dipendenza : valuta
+    ruolo_organizzativo ||--o{ responsabile : assegna
+
+    %% Organizzazione -> Entita possedute
+    organizzazione ||--o{ asset : possiede
+    organizzazione ||--o{ servizio : eroga
+    organizzazione ||--o{ dipendenza : contrae
+    organizzazione ||--o{ responsabile : nomina
+    fornitore      ||--o{ dipendenza : fornisce
+
+    %% Versioning / Audit
+    asset             ||--o{ asset_storico : versiona
+    servizio          ||--o{ servizio_storico : versiona
+    tipo_asset        ||--o{ asset_storico : tipizza
+    livello_criticita ||--o{ asset_storico : valuta
+    tipo_servizio     ||--o{ servizio_storico : tipizza
+    livello_criticita ||--o{ servizio_storico : valuta
+
+    %% Junction N:M
+    asset        ||--o{ asset_servizio : supporta
+    servizio     ||--o{ asset_servizio : "e supportato da"
+    asset        ||--o{ asset_dipendenza : dipende
+    dipendenza   ||--o{ asset_dipendenza : "serve"
+    servizio     ||--o{ servizio_dipendenza : dipende
+    dipendenza   ||--o{ servizio_dipendenza : "serve"
+    asset        ||--o{ asset_responsabile : "ha responsabile"
+    responsabile ||--o{ asset_responsabile : "e responsabile di"
+    servizio     ||--o{ servizio_responsabile : "ha responsabile"
+    responsabile ||--o{ servizio_responsabile : "e responsabile di"

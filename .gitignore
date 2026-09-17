@@ -1,0 +1,56 @@
+# =============================================================================
+# Registro NIS2/ACN — file esclusi dal controllo di versione
+# =============================================================================
+
+# --- Credenziali e configurazioni locali: MAI nel repository -----------------
+.env
+.env.*
+*.pgpass
+.pgpass
+pgpass.conf
+secrets/
+*.key
+*.pem
+*_password*
+*credential*
+
+# --- Export contenenti dati personali (profili ACN, contatti) ----------------
+# Le view di export producono nomi, email e telefoni dei responsabili:
+# non devono finire in un repository pubblico (GDPR, minimizzazione).
+*.csv
+asset*.csv
+servizi*.csv
+dipendenze*.csv
+contatti*.csv
+profilo_acn*.txt
+export/
+
+# --- Dump e backup del database ---------------------------------------------
+*.dump
+*.backup
+*.sql.gz
+*.tar
+dump/
+backup/
+
+# --- Log e file temporanei di PostgreSQL / psql -----------------------------
+*.log
+pg_log/
+postgresql.conf.local
+.psql_history
+
+# --- Artefatti di rendering del diagramma ER --------------------------------
+# Il sorgente versionato e ERD_nis2_ACN.mmd; il PNG/SVG e rigenerabile.
+ERD_nis2_ACN.svg
+erd_tmp.*
+node_modules/
+package-lock.json
+
+# --- Editor e sistema operativo ---------------------------------------------
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
