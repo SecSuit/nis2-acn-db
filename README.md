@@ -74,7 +74,8 @@ SELECT fn_esporta_profilo_acn('ACN-2024-00123');
 | `04_query_acn.sql` | 6 query analitiche, 4 view CSV, `fn_csv_quote`, `fn_esporta_profilo_acn` |
 | `05_deploy_test.sql` | Ruoli e privilegi, 17 test automatici `DO $$ ASSERT $$`, riepilogo |
 | `DOCUMENTAZIONE.md` | Data dictionary, normalizzazione, scelte progettuali, threat model |
-| `ERD_nis2_ACN.mmd` | Diagramma ER in Mermaid (sorgente versionabile, render su mermaid.live) |
+| `ERD_nis2_ACN.mmd` | Sorgente Mermaid del diagramma ER (20 entita) — riferimento versionato |
+| `ERD_nis2_ACN.png` | Render del diagramma ER |
 | `README.md` | Questo file |
 | `LICENSE` | MIT |
 | `.gitignore` | Esclude credenziali, export CSV con dati personali, dump |
@@ -102,15 +103,13 @@ registro (Query 6), non sono errori del dataset:
 ![Diagramma ER del Registro NIS2/ACN](ERD_nis2_ACN.png)
 
 Il sorgente versionato e `ERD_nis2_ACN.mmd` (Mermaid `erDiagram`, 20 entita):
-e il riferimento autoritativo, perche e diffabile e resta allineato allo schema.
-`ERD_nis2_ACN.png` e il render, versionato per comodita di consultazione.
+essendo testuale e diffabile, ogni modifica allo schema produce una differenza
+leggibile nella cronologia Git. `ERD_nis2_ACN.png` e il render, versionato per
+la consultazione diretta su GitHub.
 
-Per rigenerare l'immagine dopo una modifica dello schema: incollare il contenuto
-del `.mmd` su <https://mermaid.live> ed esportare in PNG, oppure
-
-```bash
-npx -y @mermaid-js/mermaid-cli -i ERD_nis2_ACN.mmd -o ERD_nis2_ACN.png -b white -w 3000
-```
+Per rigenerare l'immagine dopo una modifica dello schema: aprire
+<https://mermaid.live>, incollare il contenuto di `ERD_nis2_ACN.mmd`, esportare
+in PNG e sovrascrivere `ERD_nis2_ACN.png`.
 
 ## Riferimenti normativi
 

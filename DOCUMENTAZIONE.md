@@ -26,8 +26,15 @@ Tema n. 2: Privacy e Sicurezza Aziendale — Traccia PW 19
 | `DOCUMENTAZIONE.md` | Questo file |
 | `README.md` | Guida rapida di installazione |
 | `ERD_nis2_ACN.mmd` | Sorgente Mermaid del diagramma ER (20 entita) |
+| `ERD_nis2_ACN.png` | Render del diagramma ER, generato da mermaid.live |
 | `LICENSE` | MIT |
 | `.gitignore` | Esclude credenziali, export CSV con dati personali, dump |
+
+Il diagramma ER e mantenuto come **sorgente testuale** e non come sola immagine:
+il file `.mmd` e diffabile, quindi ogni modifica allo schema produce una
+differenza leggibile nella cronologia Git, mentre il PNG e un artefatto
+rigenerabile incollando il sorgente su <https://mermaid.live> ed esportando
+l'immagine.
 
 ---
 
